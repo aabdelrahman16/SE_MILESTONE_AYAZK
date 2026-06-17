@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const guestSchema = new mongoose.Schema(
   {
@@ -13,8 +13,15 @@ const guestSchema = new mongoose.Schema(
       required: true,
     },
 
-    name: { type: String, required: true },
-    email: { type: String, required: true },
+    name: {
+      type: String,
+      required: true,
+    },
+
+    email: {
+      type: String,
+      required: true,
+    },
 
     rsvpStatus: {
       type: String,
@@ -24,11 +31,17 @@ const guestSchema = new mongoose.Schema(
 
     dietaryPreference: String,
 
-    checkedIn: { type: Boolean, default: false },
+    checkedIn: {
+      type: Boolean,
+      default: false,
+    },
 
-    messageSeen: { type: Boolean, default: false },
+    messageSeen: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model("Guest", guestSchema);
+export default mongoose.model("Guest", guestSchema);
