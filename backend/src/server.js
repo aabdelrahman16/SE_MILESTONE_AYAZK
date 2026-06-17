@@ -1,28 +1,33 @@
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import { connectDB } from "./config/db.js";
-import authRoutes from "./routes/auth.routes.js";
-import vendorRoutes from "./routes/vendor.routes.js";
-import venueRoutes from "./routes/venue.routes.js";
-
-dotenv.config();
-connectDB();
+require("dotenv").config();
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+require("dotenv").config();
 
 const app = express();
-app.use(cors({ origin: process.env.CLIENT_URL || "*" }));
+
+app.use(cors());
 app.use(express.json());
 
-app.get("/api/health", (req, res) => res.json({ status: "ok" }));
-app.use("/api/auth", authRoutes);
-app.use("/api/vendors", vendorRoutes);
-app.use("/api/venues", venueRoutes);
-
-// basic error fallback
-app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(500).json({ message: "Server error" });
+app.get("/", (req, res) => {
+  res.send("Event Management Backend is running");
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.use("/api/events", require("./routes/eventRoutes"));
+app.use("/api/venues", require("./routes/venueRoutes"));
+app.use("/api/bookings", require("./routes/bookingRoutes"));
+app.use("/api/tasks", require("./routes/taskRoutes"));
+app.use("/api/guests", require("./routes/guestRoutes"));
+app.use("/api/vendors", require("./routes/vendorRoutes"));
+app.use("/api/feedback", require("./routes/feedbackRoutes"));
+app.use("/api/reports", require("./routes/reportRoutes"));
+
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log("MongoDB connected");
+    app.listen(process.env.PORT || 5000, () => {
+      console.log(`Server running on port ${process.env.PORT || 5000}`);
+    });
+  })
+  .catch((err) => console.log(err));
