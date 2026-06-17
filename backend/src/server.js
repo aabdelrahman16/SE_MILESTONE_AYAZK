@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import mongoose from "mongoose";
+import { connectDB } from "./config/db.js";
 
 import authRoutes from "./routes/auth.routes.js";
 import eventRoutes from "./routes/event.routes.js";
@@ -36,17 +36,14 @@ app.use("/api/invoices", invoiceRoutes);
 app.use("/api/feedback", feedbackRoutes);
 
 // Connect to MongoDB and start server
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log("MongoDB connected");
+const PORT = process.env.PORT || 5000;
 
-    const PORT = process.env.PORT || 5000;
+try {
+  await connectDB();
 
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error("MongoDB connection error:", err);
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
   });
+} catch (err) {
+  console.error("Failed to start server:", err);
+}
