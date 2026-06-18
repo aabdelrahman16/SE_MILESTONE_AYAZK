@@ -55,6 +55,8 @@ PORT=5001
 
 ## Assumptions
 Reasonable assumptions were made where project requirements were not fully specified.
+## Dummy Data
+The database contains sample records created during development and testing, including users, venues, events, bookings, vendors, guests, tasks, invoices, and feedback records.
 ## AI Usage
 AI assistance was used for debugging, explanations, API testing, and development support.
 See AI_Chat_Log.pdf.
