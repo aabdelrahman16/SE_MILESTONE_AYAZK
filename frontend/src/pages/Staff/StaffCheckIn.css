@@ -1,0 +1,81 @@
+.checkin-container {
+  max-width: 1000px;
+  margin: 60px auto;
+  padding: 20px;
+}
+
+.checkin-title {
+  font-size: 40px;
+  font-weight: 900;
+  text-align: center;
+  color: #b8860b;
+  text-transform: uppercase;
+  margin-bottom: 30px;
+}
+
+.checkin-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.checkin-table th,
+.checkin-table td {
+  padding: 15px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.checkin-table th {
+  background: #fff7d1;
+  color: #b8860b;
+  font-weight: 700;
+}
+
+.badge {
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.badge.checked {
+  background: #d4edda;
+  color: #155724;
+}
+
+.badge.not {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.checkin-btn {
+  padding: 10px 15px;
+  background: #ffd700;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.checkin-btn:hover {
+  background: #ffcc00;
+}
+
+.disabled-btn {
+  padding: 10px 15px;
+  background: #ccc;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: not-allowed;
+}
+
+.checkin-table td:first-child,
+.checkin-table th:first-child {
+  width: 50px;
+  text-align: center;
+  font-weight: bold;
+}

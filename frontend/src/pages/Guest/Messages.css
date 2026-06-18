@@ -1,0 +1,70 @@
+body {
+  background: linear-gradient(
+      rgba(0, 0, 0, 0.45),
+      rgba(0, 0, 0, 0.45)
+    ),
+    url("https://images.unsplash.com/photo-1529634806980-2d6f1a3b6f04?auto=format&fit=crop&w=1400&q=80")
+      no-repeat center center fixed;
+  background-size: cover;
+  font-family: "Playfair Display", serif;
+  margin: 0;
+  padding: 0;
+}
+
+.messages-container {
+  max-width: 650px;
+  margin: 90px auto;
+  padding: 20px;
+  text-align: center;
+  color: #fff;
+}
+
+.messages-title {
+  font-size: 38px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  margin-bottom: 45px;
+  color: #f5e6c8;
+  text-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+  border-bottom: 2px solid rgba(212, 175, 55, 0.5);
+  display: inline-block;
+  padding-bottom: 8px;
+}
+
+.messages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+
+.message-card {
+  background: rgba(255, 255, 255, 0.92);
+  padding: 28px;
+  border-radius: 18px;
+  border: 1px solid rgba(212, 175, 55, 0.55); /* gold border */
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(6px);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+
+.message-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.35);
+  border-color: rgba(212, 175, 55, 0.8);
+}
+
+.message-text {
+  font-size: 20px;
+  color: #2f2f2f;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.message-date {
+  font-size: 15px;
+  color: #7a7a7a;
+  font-style: italic;
+  letter-spacing: 0.5px;
+}

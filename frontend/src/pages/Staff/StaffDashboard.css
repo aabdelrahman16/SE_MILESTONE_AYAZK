@@ -1,0 +1,88 @@
+body {
+  background: linear-gradient(
+      rgba(0, 0, 0, 0.55),
+      rgba(0, 0, 0, 0.55)
+    ),
+    url("https://images.unsplash.com/photo-1529634806980-2d6f1a3b6f04?auto=format&fit=crop&w=1400&q=80")
+      no-repeat center center fixed;
+  background-size: cover;
+  font-family: "Playfair Display", serif;
+  margin: 0;
+  padding: 0;
+}
+
+.dashboard-container {
+  max-width: 1100px;
+  margin: 80px auto;
+  text-align: center;
+  color: #fff;
+}
+
+.dashboard-title {
+  font-size: 48px;
+  font-weight: 700;
+  color: #f5e6c8;
+  margin-bottom: 50px;
+  text-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  border-bottom: 2px solid rgba(212, 175, 55, 0.5);
+  display: inline-block;
+  padding-bottom: 10px;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 35px;
+  justify-content: center;
+  align-items: center;
+}
+
+
+.dashboard-card {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  border-radius: 18px;
+  padding: 30px;
+  cursor: pointer;
+  transition: 0.3s ease;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(6px);
+}
+
+.dashboard-card h2 {
+  font-size: 26px;
+  color: #f5e6c8;
+  margin-bottom: 10px;
+}
+
+.dashboard-card p {
+  font-size: 16px;
+  color: #ddd;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.45);
+  border-color: rgba(212, 175, 55, 0.9);
+}
+
+.logout-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: linear-gradient(135deg, #ffd700, #e6b800);
+  color: black;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 16px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: 0.25s ease;
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+}
+
+.logout-btn:hover {
+  background: linear-gradient(135deg, #e6b800, #cfa600);
+  transform: translateY(-2px);
+}

@@ -1,0 +1,55 @@
+.feedback-container {
+  max-width: 800px;
+  margin: 60px auto;
+  padding: 20px;
+}
+
+.feedback-title {
+  font-size: 40px;
+  font-weight: 900;
+  text-align: center;
+  margin-bottom: 30px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #b8860b; /* rich gold */
+  position: relative;
+  border-bottom: none !important;
+}
+
+.feedback-title::after {
+  content: "";
+  width: 120px;
+  height: 4px;
+  background: linear-gradient(90deg, #ffd700, #ffb300);
+  display: block;
+  margin: 10px auto 0;
+  border-radius: 2px;
+}
+
+.feedback-list {
+  list-style: none;
+  padding: 0;
+}
+
+.feedback-item {
+  background: #ffffff; /* clean white card */
+  padding: 20px;
+  margin-bottom: 15px;
+  border-radius: 12px;
+  border: 1px solid rgba(184, 134, 11, 0.3); /* soft gold border */
+  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+}
+
+.feedback-item p {
+  color: #333; /* dark text for readability */
+  font-size: 18px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.feedback-date {
+  display: block;
+  margin-top: 10px;
+  font-size: 14px;
+  color: #b8860b; /* gold date */
+}
