@@ -55,3 +55,6 @@ PORT=5001
 
 ## Assumptions
 Reasonable assumptions were made where project requirements were not fully specified.
+## AI Usage
+AI assistance was used for debugging, explanations, API testing, and development support.
+See AI_Chat_Log.pdf.
