@@ -14,7 +14,9 @@ export default function Register() {
     setError("");
     try {
       const user = await register(form);
-      nav(user.role === "vendor" ? "/vendor/profile" : "/venue/listings");
+      if (user.role === "vendor") nav("/vendor/profile");
+      else if (user.role === "venue_owner") nav("/venue/listings");
+      else nav("/organizer/dashboard");
     } catch (err) {
       setError(err.response?.data?.message || "Registration failed");
     }
@@ -27,6 +29,7 @@ export default function Register() {
       <select value={form.role} onChange={set("role")}>
         <option value="vendor">Vendor / Supplier</option>
         <option value="venue_owner">Venue Owner</option>
+        <option value="organizer">Event Organizer</option>
       </select>
       <label>Name</label>
       <input value={form.name} onChange={set("name")} />

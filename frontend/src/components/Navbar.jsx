@@ -30,6 +30,14 @@ export default function Navbar() {
             <Link to="/venue/reports">Reports</Link>
           </span>
         )}
+        {user?.role === "organizer" && (
+          <span style={{ marginLeft: 24 }}>
+            <Link to="/organizer/dashboard">Dashboard</Link>
+            <Link to="/organizer/planning">Planning</Link>
+            <Link to="/organizer/budget">Budget</Link>
+            <Link to="/organizer/layout">Floor Plan</Link>
+          </span>
+        )}
       </div>
       {user && (
         <div>

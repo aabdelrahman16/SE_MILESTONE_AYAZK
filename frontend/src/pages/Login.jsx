@@ -13,7 +13,9 @@ export default function Login() {
     setError("");
     try {
       const user = await login(email, password);
-      nav(user.role === "vendor" ? "/vendor/requests" : "/venue/listings");
+      if (user.role === "vendor") nav("/vendor/requests");
+      else if (user.role === "venue_owner") nav("/venue/listings");
+      else nav("/organizer/dashboard");
     } catch (err) {
       setError(err.response?.data?.message || "Login failed");
     }
@@ -29,7 +31,7 @@ export default function Login() {
       {error && <div className="error">{error}</div>}
       <button className="btn" onClick={submit}>Login</button>
       <p style={{ marginTop: 14, fontSize: 13 }}>
-        New vendor or venue owner? <Link to="/register">Register</Link>
+        New user? <Link to="/register">Register</Link>
       </p>
     </div>
   );

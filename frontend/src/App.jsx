@@ -13,6 +13,7 @@ import VenueListings from "./pages/venue/VenueListings.jsx";
 import BookingRequests from "./pages/venue/BookingRequests.jsx";
 import ConfirmedBookings from "./pages/venue/ConfirmedBookings.jsx";
 import Reports from "./pages/venue/Reports.jsx";
+import OrganizerDashboard from "./pages/organizer/OrganizerDashboard.jsx";
 
 function Protected({ children, role }) {
   const { user } = useAuth();
@@ -43,6 +44,12 @@ export default function App() {
           <Route path="/venue/bookings" element={<Protected role="venue_owner"><ConfirmedBookings /></Protected>} />
           <Route path="/venue/reports" element={<Protected role="venue_owner"><Reports /></Protected>} />
 
+          {/* Organizer */}
+          <Route path="/organizer/dashboard" element={<Protected role="organizer"><OrganizerDashboard /></Protected>} />
+          <Route path="/organizer/planning" element={<Protected role="organizer"><OrganizerDashboard /></Protected>} />
+          <Route path="/organizer/budget" element={<Protected role="organizer"><OrganizerDashboard /></Protected>} />
+          <Route path="/organizer/layout" element={<Protected role="organizer"><OrganizerDashboard /></Protected>} />
+
           <Route path="*" element={<Navigate to={defaultRoute(user)} />} />
         </Routes>
       </div>
@@ -54,5 +61,6 @@ function defaultRoute(user) {
   if (!user) return "/login";
   if (user.role === "vendor") return "/vendor/requests";
   if (user.role === "venue_owner") return "/venue/listings";
+  if (user.role === "organizer") return "/organizer/dashboard";
   return "/login";
 }
