@@ -29,6 +29,7 @@ export default function Register() {
       <select value={form.role} onChange={set("role")}>
         <option value="vendor">Vendor / Supplier</option>
         <option value="venue_owner">Venue Owner</option>
+        <option value="organizer">Event Organizer</option>
       </select>
       <label>Name</label>
       <input value={form.name} onChange={set("name")} />
