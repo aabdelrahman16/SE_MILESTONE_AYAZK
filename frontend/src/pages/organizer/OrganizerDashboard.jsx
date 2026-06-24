@@ -1,423 +1,142 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
 import api from "../../services/api.js";
+import { useAuth } from "../../context/AuthContext.jsx";
 
-const fallbackData = {
-  events: [
-    {
-      id: 1,
-      name: "Avery & Jordan Wedding",
-      date: "2026-06-18",
-      time: "16:00",
-      venue: "Harbor Glass Hall",
-      status: "Today",
-      guests: 184,
-      arrived: 62,
-      budget: 28500,
-      actual: 24180,
-    },
-    {
-      id: 2,
-      name: "Northstar Product Launch",
-      date: "2026-06-24",
-      time: "18:30",
-      venue: "Union Loft",
-      status: "Upcoming",
-      guests: 260,
-      arrived: 0,
-      budget: 42000,
-      actual: 17650,
-    },
-    {
-      id: 3,
-      name: "Founders Dinner",
-      date: "2026-07-02",
-      time: "19:00",
-      venue: "Cedar Room",
-      status: "Upcoming",
-      guests: 72,
-      arrived: 0,
-      budget: 12000,
-      actual: 4300,
-    },
-  ],
-  tasks: [
-    { id: 101, eventId: 1, title: "Confirm floral delivery", owner: "Nina", due: "10:30", status: "In progress", priority: "High" },
-    { id: 102, eventId: 1, title: "Print final seating cards", owner: "Omar", due: "12:00", status: "Not started", priority: "High" },
-    { id: 103, eventId: 1, title: "Audio check with band", owner: "Jules", due: "14:15", status: "Done", priority: "Medium" },
-    { id: 104, eventId: 2, title: "Approve stage lighting quote", owner: "Maya", due: "Tomorrow", status: "In progress", priority: "Medium" },
-    { id: 105, eventId: 3, title: "Send menu notes to chef", owner: "Nina", due: "Jun 26", status: "Not started", priority: "Low" },
-  ],
-  reminders: [
-    { id: 1, text: "Venue deposit for Northstar Launch is due today", time: "09:00" },
-    { id: 2, text: "Guest RSVP export scheduled for 15:00", time: "15:00" },
-    { id: 3, text: "Review AV invoice before approval", time: "17:30" },
-  ],
-  budgetLines: [
-    { id: 1, category: "Venue", planned: 9000, actual: 9000 },
-    { id: 2, category: "Catering", planned: 11200, actual: 9800 },
-    { id: 3, category: "Decor", planned: 3600, actual: 2900 },
-    { id: 4, category: "Entertainment", planned: 2500, actual: 2100 },
-    { id: 5, category: "Staffing", planned: 2200, actual: 380 },
-  ],
-  floorItems: [
-    { id: "stage", label: "Stage", type: "stage", x: 12, y: 10 },
-    { id: "dance", label: "Dance Floor", type: "floor", x: 42, y: 30 },
-    { id: "bar", label: "Bar", type: "service", x: 76, y: 16 },
-    { id: "table-a", label: "Table A", type: "table", x: 20, y: 58 },
-    { id: "table-b", label: "Table B", type: "table", x: 49, y: 60 },
-    { id: "table-c", label: "Table C", type: "table", x: 76, y: 58 },
-  ],
-};
+const emptyEvent = { title: "", description: "", date: "", time: "", budgetPlanned: 0, budgetActual: 0, status: "planned" };
+const fmtDate = (d) => d ? new Date(d).toLocaleDateString() : "—";
+const getId = (x) => typeof x === "string" ? x : x?._id || x?.id || "";
 
 export default function OrganizerDashboard() {
-  const location = useLocation();
-  const [data, setData] = useState(fallbackData);
-  const [activeView, setActiveView] = useState(viewFromPath(location.pathname));
-  const [filter, setFilter] = useState("All");
-  const [syncStatus, setSyncStatus] = useState("Demo data");
-  const selectedEvent = data.events[0];
+  const { user } = useAuth();
+  const [tab, setTab] = useState("overview");
+  const [events, setEvents] = useState([]);
+  const [venues, setVenues] = useState([]);
+  const [vendors, setVendors] = useState([]);
+  const [bookings, setBookings] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [guests, setGuests] = useState([]);
+  const [invoices, setInvoices] = useState([]);
+  const [feedback, setFeedback] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [notice, setNotice] = useState("");
+  const [error, setError] = useState("");
+  const [eventForm, setEventForm] = useState(emptyEvent);
+  const [filters, setFilters] = useState({ location: "", minSize: "", date: "" });
+  const [taskForm, setTaskForm] = useState({ event: "", title: "", description: "", dueDate: "", status: "pending" });
+  const [guestForm, setGuestForm] = useState({ event: "", name: "", email: "", rsvpStatus: "pending", dietaryPreference: "" });
+  const [bookingForm, setBookingForm] = useState({ venue: "", eventType: "Conference", date: "", expectedAttendees: 100, specialRequirements: "" });
 
-  useEffect(() => {
-    syncData();
-  }, []);
-
-  useEffect(() => {
-    setActiveView(viewFromPath(location.pathname));
-  }, [location.pathname]);
-
-  const filteredTasks =
-    filter === "All" ? data.tasks : data.tasks.filter((task) => task.status === filter);
-
-  const budgetTotals = useMemo(
-    () =>
-      data.budgetLines.reduce(
-        (totals, item) => ({
-          planned: totals.planned + item.planned,
-          actual: totals.actual + item.actual,
-        }),
-        { planned: 0, actual: 0 }
-      ),
-    [data.budgetLines]
-  );
-
-  async function syncData() {
-    setSyncStatus("Syncing");
+  const loadAll = async () => {
+    setLoading(true); setError("");
     try {
-      const [eventsRes, tasksRes] = await Promise.all([
-        api.get("/events"),
-        api.get("/tasks"),
+      const [ev, ve, vv, bo, ta, gu, inv, fb] = await Promise.allSettled([
+        api.get("/events"), api.get("/venues"), api.get("/vendors"), api.get("/bookings"), api.get("/tasks"), api.get("/guests"), api.get("/invoices"), api.get("/feedback")
       ]);
+      if (ev.status === "fulfilled") setEvents(ev.value.data);
+      if (ve.status === "fulfilled") setVenues(ve.value.data);
+      if (vv.status === "fulfilled") setVendors(vv.value.data);
+      if (bo.status === "fulfilled") setBookings(bo.value.data);
+      if (ta.status === "fulfilled") setTasks(ta.value.data);
+      if (gu.status === "fulfilled") setGuests(gu.value.data);
+      if (inv.status === "fulfilled") setInvoices(inv.value.data);
+      if (fb.status === "fulfilled") setFeedback(fb.value.data);
+    } finally { setLoading(false); }
+  };
 
-      setData((current) => ({
-        ...current,
-        events: Array.isArray(eventsRes.data) && eventsRes.data.length ? eventsRes.data : current.events,
-        tasks: Array.isArray(tasksRes.data) && tasksRes.data.length ? tasksRes.data : current.tasks,
-      }));
-      setSyncStatus("Connected");
-    } catch {
-      setSyncStatus("Demo data");
-    }
+  useEffect(() => { loadAll(); }, []);
+
+  const stats = useMemo(() => {
+    const planned = events.reduce((s, e) => s + Number(e.budget?.planned || 0), 0);
+    const actual = events.reduce((s, e) => s + Number(e.budget?.actual || 0), 0);
+    const arrived = guests.filter((g) => g.checkedIn).length;
+    const avgRating = feedback.length ? (feedback.reduce((s, f) => s + Number(f.rating || 0), 0) / feedback.length).toFixed(1) : "—";
+    return { planned, actual, arrived, avgRating };
+  }, [events, guests, feedback]);
+
+  async function saveEvent(e) {
+    e.preventDefault();
+    try {
+      const payload = { title: eventForm.title, description: eventForm.description, date: eventForm.date, time: eventForm.time, status: eventForm.status, organizer: user.id, budget: { planned: Number(eventForm.budgetPlanned), actual: Number(eventForm.budgetActual) } };
+      await api.post("/events", payload);
+      setEventForm(emptyEvent); setNotice("Event created"); loadAll();
+    } catch (err) { setError(err.response?.data?.message || err.message); }
   }
 
-  function updateTaskStatus(id, status) {
-    setData((current) => ({
-      ...current,
-      tasks: current.tasks.map((task) => (task.id === id ? { ...task, status } : task)),
-    }));
+  async function updateEvent(id, patch) {
+    await api.put(`/events/${id}`, patch); setNotice("Event updated"); loadAll();
   }
 
-  function updateActualCost(id, actual) {
-    setData((current) => ({
-      ...current,
-      budgetLines: current.budgetLines.map((line) =>
-        line.id === id ? { ...line, actual: Number(actual) || 0 } : line
-      ),
-    }));
+  async function searchVenues(e) {
+    e?.preventDefault();
+    const { data } = await api.get("/venues", { params: filters });
+    setVenues(data);
   }
 
-  return (
-    <div className="organizer-page">
-      <div className="organizer-header">
-        <div>
-          <p className="muted">Organizer workspace</p>
-          <h1>Event command center</h1>
-        </div>
-        <div className="organizer-actions">
-          <span className="badge active">{syncStatus}</span>
-          <button className="btn secondary" onClick={syncData}>Sync APIs</button>
-        </div>
+  async function sendBooking(e) {
+    e.preventDefault();
+    const venue = venues.find((v) => v._id === bookingForm.venue);
+    if (!venue) return setError("Choose a venue first");
+    try {
+      await api.post("/bookings", { ...bookingForm, owner: getId(venue.owner), organizer: user.id, expectedAttendees: Number(bookingForm.expectedAttendees) });
+      setBookingForm({ venue: "", eventType: "Conference", date: "", expectedAttendees: 100, specialRequirements: "" });
+      setNotice("Booking request sent"); loadAll();
+    } catch (err) { setError(err.response?.data?.message || err.message); }
+  }
+
+  async function createTask(e) {
+    e.preventDefault();
+    try { await api.post("/tasks", taskForm); setTaskForm({ event: "", title: "", description: "", dueDate: "", status: "pending" }); setNotice("Task created"); loadAll(); }
+    catch (err) { setError(err.response?.data?.message || err.message); }
+  }
+
+  async function createGuest(e) {
+    e.preventDefault();
+    try { await api.post("/guests", guestForm); setGuestForm({ event: "", name: "", email: "", rsvpStatus: "pending", dietaryPreference: "" }); setNotice("Guest added"); loadAll(); }
+    catch (err) { setError(err.response?.data?.message || err.message); }
+  }
+
+  async function checkIn(id) { await api.put(`/guests/${id}/checkin`); setNotice("Guest checked in"); loadAll(); }
+  async function taskStatus(id, status) { await api.put(`/tasks/${id}`, { status }); loadAll(); }
+
+  return <div className="dash">
+    <div className="page-head"><div><p className="eyebrow">Organizer workspace</p><h1>Event Management Dashboard</h1><p>Manage the main user journeys from one connected React interface.</p></div><button onClick={loadAll}>Refresh</button></div>
+    {notice && <div className="notice" onClick={() => setNotice("")}>{notice}</div>}
+    {error && <div className="error" onClick={() => setError("")}>{error}</div>}
+    <div className="tabs">{["overview", "events", "venues", "tasks", "guests", "vendors", "budget", "feedback"].map(t => <button key={t} onClick={() => setTab(t)} className={tab === t ? "active" : ""}>{t}</button>)}</div>
+    {loading && <p>Loading data...</p>}
+
+    {tab === "overview" && <section>
+      <div className="stat-grid">
+        <Stat label="Events" value={events.length} /><Stat label="Open tasks" value={tasks.filter(t => t.status !== "done").length} /><Stat label="Guests checked in" value={`${stats.arrived}/${guests.length}`} /><Stat label="Avg. rating" value={stats.avgRating} />
       </div>
+      <div className="grid two"><Card title="Upcoming events"><EventTable events={events.slice(0,5)} onUpdate={updateEvent} /></Card><Card title="Recent bookings"><BookingTable bookings={bookings.slice(0,5)} /></Card></div>
+    </section>}
 
-      <div className="organizer-tabs">
-        <button className={activeView === "dashboard" ? "active" : ""} onClick={() => setActiveView("dashboard")}>Dashboard</button>
-        <button className={activeView === "planning" ? "active" : ""} onClick={() => setActiveView("planning")}>Planning</button>
-        <button className={activeView === "budget" ? "active" : ""} onClick={() => setActiveView("budget")}>Budget</button>
-        <button className={activeView === "layout" ? "active" : ""} onClick={() => setActiveView("layout")}>Floor Plan</button>
-      </div>
+    {tab === "events" && <section className="grid two"><Card title="Create event"><form onSubmit={saveEvent} className="form"><Input label="Title" value={eventForm.title} onChange={v=>setEventForm({...eventForm,title:v})} required/><Input label="Description" value={eventForm.description} onChange={v=>setEventForm({...eventForm,description:v})}/><Input label="Date" type="date" value={eventForm.date} onChange={v=>setEventForm({...eventForm,date:v})} required/><Input label="Time" type="time" value={eventForm.time} onChange={v=>setEventForm({...eventForm,time:v})}/><Input label="Planned budget" type="number" value={eventForm.budgetPlanned} onChange={v=>setEventForm({...eventForm,budgetPlanned:v})}/><Input label="Actual expense" type="number" value={eventForm.budgetActual} onChange={v=>setEventForm({...eventForm,budgetActual:v})}/><button className="btn">Create event</button></form></Card><Card title="Events"><EventTable events={events} onUpdate={updateEvent} /></Card></section>}
 
-      {activeView === "dashboard" && (
-        <>
-          <div className="organizer-metrics">
-            <Metric label="Today events" value={data.events.filter((event) => event.status === "Today").length} />
-            <Metric label="Guests arrived" value={`${selectedEvent.arrived}/${selectedEvent.guests}`} />
-            <Metric label="Open tasks" value={data.tasks.filter((task) => task.status !== "Done").length} />
-            <Metric label="Budget used" value={`${Math.round((selectedEvent.actual / selectedEvent.budget) * 100)}%`} />
-          </div>
+    {tab === "venues" && <section className="grid two"><Card title="Search venues"><form onSubmit={searchVenues} className="form"><Input label="Location" value={filters.location} onChange={v=>setFilters({...filters,location:v})}/><Input label="Minimum size sqm" type="number" value={filters.minSize} onChange={v=>setFilters({...filters,minSize:v})}/><Input label="Date" type="date" value={filters.date} onChange={v=>setFilters({...filters,date:v})}/><button className="btn">Search</button></form><VenueCards venues={venues} choose={id => setBookingForm({...bookingForm, venue:id})}/></Card><Card title="Send booking request"><form onSubmit={sendBooking} className="form"><Select label="Venue" value={bookingForm.venue} onChange={v=>setBookingForm({...bookingForm,venue:v})} options={venues.map(v=>[v._id, `${v.name} - ${v.location}`])}/><Input label="Event type" value={bookingForm.eventType} onChange={v=>setBookingForm({...bookingForm,eventType:v})}/><Input label="Date" type="date" value={bookingForm.date} onChange={v=>setBookingForm({...bookingForm,date:v})} required/><Input label="Expected attendees" type="number" value={bookingForm.expectedAttendees} onChange={v=>setBookingForm({...bookingForm,expectedAttendees:v})}/><Input label="Special requirements" value={bookingForm.specialRequirements} onChange={v=>setBookingForm({...bookingForm,specialRequirements:v})}/><button className="btn">Send request</button></form><BookingTable bookings={bookings}/></Card></section>}
 
-          <div className="organizer-grid">
-            <section className="card">
-              <h2>Today's Events</h2>
-              {data.events.map((event) => (
-                <div className="organizer-list-row" key={event.id}>
-                  <div>
-                    <strong>{event.name}</strong>
-                    <p>{event.venue} - {event.date} - {event.time}</p>
-                  </div>
-                  <span className={`badge ${event.status === "Today" ? "active" : "pending"}`}>{event.status}</span>
-                </div>
-              ))}
-            </section>
+    {tab === "tasks" && <section className="grid two"><Card title="Create task"><form onSubmit={createTask} className="form"><Select label="Event" value={taskForm.event} onChange={v=>setTaskForm({...taskForm,event:v})} options={events.map(e=>[e._id,e.title])}/><Input label="Task title" value={taskForm.title} onChange={v=>setTaskForm({...taskForm,title:v})} required/><Input label="Description" value={taskForm.description} onChange={v=>setTaskForm({...taskForm,description:v})}/><Input label="Due date" type="date" value={taskForm.dueDate} onChange={v=>setTaskForm({...taskForm,dueDate:v})}/><button className="btn">Create task</button></form></Card><Card title="Task board"><TaskTable tasks={tasks} onStatus={taskStatus}/></Card></section>}
 
-            <section className="card">
-              <h2>Reminders</h2>
-              {data.reminders.map((reminder) => (
-                <div className="reminder-row" key={reminder.id}>
-                  <strong>{reminder.time}</strong>
-                  <span>{reminder.text}</span>
-                </div>
-              ))}
-            </section>
-          </div>
+    {tab === "guests" && <section className="grid two"><Card title="Add guest"><form onSubmit={createGuest} className="form"><Select label="Event" value={guestForm.event} onChange={v=>setGuestForm({...guestForm,event:v})} options={events.map(e=>[e._id,e.title])}/><Input label="Name" value={guestForm.name} onChange={v=>setGuestForm({...guestForm,name:v})} required/><Input label="Email" type="email" value={guestForm.email} onChange={v=>setGuestForm({...guestForm,email:v})} required/><Select label="RSVP" value={guestForm.rsvpStatus} onChange={v=>setGuestForm({...guestForm,rsvpStatus:v})} options={["pending","attending","not attending","maybe"].map(x=>[x,x])}/><Input label="Dietary preference" value={guestForm.dietaryPreference} onChange={v=>setGuestForm({...guestForm,dietaryPreference:v})}/><button className="btn">Add guest</button></form></Card><Card title="Guest list and check-in"><GuestTable guests={guests} onCheckIn={checkIn}/></Card></section>}
 
-          <TaskBoard tasks={data.tasks} updateTaskStatus={updateTaskStatus} />
-        </>
-      )}
+    {tab === "vendors" && <section><Card title="Vendor directory"><div className="cards">{vendors.map(v=><div className="mini-card" key={v._id}><h3>{v.companyName}</h3><p>{v.suppliesOffered?.join(", ") || "Services"}</p><p>{v.mainLocation || "No location"}</p><small>{v.contactInfo?.email || v.user?.email}</small></div>)}</div></Card></section>}
 
-      {activeView === "planning" && (
-        <>
-          <div className="organizer-grid">
-            <section className="card">
-              <h2>Upcoming Events</h2>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Event</th>
-                    <th>Date</th>
-                    <th>Venue</th>
-                    <th>Guests</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.events.map((event) => (
-                    <tr key={event.id}>
-                      <td>{event.name}</td>
-                      <td>{event.date}</td>
-                      <td>{event.venue}</td>
-                      <td>{event.guests}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </section>
+    {tab === "budget" && <section className="grid two"><Card title="Budget summary"><div className="stat-grid"><Stat label="Planned" value={`${stats.planned} EGP`} /><Stat label="Actual" value={`${stats.actual} EGP`} /><Stat label="Difference" value={`${stats.planned - stats.actual} EGP`} /></div><EventTable events={events} onUpdate={updateEvent}/></Card><Card title="Invoices"><InvoiceTable invoices={invoices}/></Card></section>}
 
-            <section className="card">
-              <h2>Task Filters</h2>
-              <label>Status</label>
-              <select value={filter} onChange={(event) => setFilter(event.target.value)}>
-                <option>All</option>
-                <option>Not started</option>
-                <option>In progress</option>
-                <option>Done</option>
-              </select>
-              <label>Search</label>
-              <input placeholder="Search by event, owner, or task" />
-            </section>
-          </div>
-
-          <section className="card">
-            <h2>Task List</h2>
-            <table>
-              <thead>
-                <tr>
-                  <th>Task</th>
-                  <th>Owner</th>
-                  <th>Due</th>
-                  <th>Priority</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredTasks.map((task) => (
-                  <tr key={task.id}>
-                    <td>{task.title}</td>
-                    <td>{task.owner}</td>
-                    <td>{task.due}</td>
-                    <td>{task.priority}</td>
-                    <td>
-                      <StatusSelect task={task} updateTaskStatus={updateTaskStatus} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </section>
-        </>
-      )}
-
-      {activeView === "budget" && (
-        <>
-          <div className="organizer-metrics">
-            <Metric label="Planned budget" value={currency(budgetTotals.planned)} />
-            <Metric label="Actual expenses" value={currency(budgetTotals.actual)} />
-            <Metric label="Remaining" value={currency(budgetTotals.planned - budgetTotals.actual)} />
-          </div>
-
-          <section className="card">
-            <h2>Planned vs Actual</h2>
-            {data.budgetLines.map((line) => {
-              const percent = Math.min(100, Math.round((line.actual / line.planned) * 100));
-              return (
-                <div className="budget-line" key={line.id}>
-                  <div>
-                    <strong>{line.category}</strong>
-                    <span>{currency(line.actual)} of {currency(line.planned)}</span>
-                  </div>
-                  <div className="progress"><span style={{ width: `${percent}%` }} /></div>
-                  <input
-                    type="number"
-                    value={line.actual}
-                    onChange={(event) => updateActualCost(line.id, event.target.value)}
-                  />
-                </div>
-              );
-            })}
-          </section>
-        </>
-      )}
-
-      {activeView === "layout" && (
-        <LayoutDesigner
-          selectedEvent={selectedEvent}
-          floorItems={data.floorItems}
-          setData={setData}
-        />
-      )}
-    </div>
-  );
+    {tab === "feedback" && <section className="grid two"><Card title="Feedback analytics"><div className="stat-grid"><Stat label="Responses" value={feedback.length}/><Stat label="Average rating" value={stats.avgRating}/></div><FeedbackTable feedback={feedback}/></Card><Card title="Report notes"><p>This page supports the required event reporting flow by showing attendance, ratings, and comments collected from the database.</p></Card></section>}
+  </div>;
 }
 
-function Metric({ label, value }) {
-  return (
-    <div className="card metric-card">
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
-  );
-}
+function Stat({ label, value }) { return <div className="stat"><span>{label}</span><b>{value}</b></div>; }
+function Card({ title, children }) { return <div className="card"><h2>{title}</h2>{children}</div>; }
+function Input({ label, value, onChange, type="text", required=false }) { return <label><span>{label}</span><input type={type} value={value} required={required} onChange={e=>onChange(e.target.value)} /></label>; }
+function Select({ label, value, onChange, options }) { return <label><span>{label}</span><select value={value} onChange={e=>onChange(e.target.value)} required><option value="">Choose...</option>{options.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label>; }
 
-function TaskBoard({ tasks, updateTaskStatus }) {
-  return (
-    <div className="task-board">
-      {["Not started", "In progress", "Done"].map((status) => (
-        <section className="card" key={status}>
-          <h2>{status}</h2>
-          {tasks.filter((task) => task.status === status).map((task) => (
-            <div className="task-card" key={task.id}>
-              <strong>{task.title}</strong>
-              <p>{task.owner} - Due {task.due}</p>
-              <StatusSelect task={task} updateTaskStatus={updateTaskStatus} />
-            </div>
-          ))}
-        </section>
-      ))}
-    </div>
-  );
-}
-
-function StatusSelect({ task, updateTaskStatus }) {
-  return (
-    <select value={task.status} onChange={(event) => updateTaskStatus(task.id, event.target.value)}>
-      <option>Not started</option>
-      <option>In progress</option>
-      <option>Done</option>
-    </select>
-  );
-}
-
-function LayoutDesigner({ selectedEvent, floorItems, setData }) {
-  const [dragging, setDragging] = useState(null);
-
-  function moveItem(event) {
-    if (!dragging) return;
-    const board = event.currentTarget.getBoundingClientRect();
-    const x = Math.max(4, Math.min(92, ((event.clientX - board.left) / board.width) * 100));
-    const y = Math.max(5, Math.min(88, ((event.clientY - board.top) / board.height) * 100));
-
-    setData((current) => ({
-      ...current,
-      floorItems: current.floorItems.map((item) => (item.id === dragging ? { ...item, x, y } : item)),
-    }));
-  }
-
-  function exportLayout() {
-    const payload = JSON.stringify({ event: selectedEvent.name, items: floorItems }, null, 2);
-    const blob = new Blob([payload], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${selectedEvent.name.toLowerCase().replaceAll(" ", "-")}-layout.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-  }
-
-  return (
-    <section className="card">
-      <div className="layout-header">
-        <div>
-          <h2>{selectedEvent.venue} Floor Plan</h2>
-          <p className="muted">Drag tables, service points, and stage areas into place.</p>
-        </div>
-        <button className="btn secondary" onClick={exportLayout}>Export Layout</button>
-      </div>
-
-      <div
-        className="floor-plan"
-        onDragOver={(event) => {
-          event.preventDefault();
-          moveItem(event);
-        }}
-        onDrop={() => setDragging(null)}
-      >
-        <div className="floor-entrance">Main entrance</div>
-        {floorItems.map((item) => (
-          <button
-            draggable
-            className={`floor-item ${item.type}`}
-            key={item.id}
-            style={{ left: `${item.x}%`, top: `${item.y}%` }}
-            onDragStart={() => setDragging(item.id)}
-            onDragEnd={() => setDragging(null)}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function currency(value) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
-
-function viewFromPath(pathname) {
-  if (pathname.includes("/planning")) return "planning";
-  if (pathname.includes("/budget")) return "budget";
-  if (pathname.includes("/layout")) return "layout";
-  return "dashboard";
-}
+function EventTable({ events, onUpdate }) { return <div className="table-wrap"><table><thead><tr><th>Event</th><th>Date</th><th>Status</th><th>Budget</th><th>Action</th></tr></thead><tbody>{events.map(e=><tr key={e._id}><td><b>{e.title}</b><br/><small>{e.description}</small></td><td>{fmtDate(e.date)} {e.time}</td><td><span className="pill">{e.status}</span></td><td>{e.budget?.planned || 0} / {e.budget?.actual || 0}</td><td><select value={e.status} onChange={x=>onUpdate(e._id,{status:x.target.value})}><option>planned</option><option>ongoing</option><option>completed</option><option>cancelled</option></select></td></tr>)}</tbody></table></div>; }
+function BookingTable({ bookings }) { return <div className="table-wrap"><table><thead><tr><th>Venue</th><th>Type/date</th><th>Guests</th><th>Status</th></tr></thead><tbody>{bookings.map(b=><tr key={b._id}><td>{b.venue?.name || "Venue"}</td><td>{b.eventType}<br/><small>{fmtDate(b.date)}</small></td><td>{b.expectedAttendees}</td><td><span className="pill">{b.status}</span></td></tr>)}</tbody></table></div>; }
+function TaskTable({ tasks, onStatus }) { return <div className="table-wrap"><table><thead><tr><th>Task</th><th>Event</th><th>Due</th><th>Status</th></tr></thead><tbody>{tasks.map(t=><tr key={t._id}><td>{t.title}<br/><small>{t.description}</small></td><td>{t.event?.title || "—"}</td><td>{fmtDate(t.dueDate)}</td><td><select value={t.status} onChange={e=>onStatus(t._id,e.target.value)}><option>not assigned</option><option>pending</option><option>in progress</option><option>done</option></select></td></tr>)}</tbody></table></div>; }
+function GuestTable({ guests, onCheckIn }) { return <div className="table-wrap"><table><thead><tr><th>Guest</th><th>Event</th><th>RSVP</th><th>Check-in</th></tr></thead><tbody>{guests.map(g=><tr key={g._id}><td>{g.name}<br/><small>{g.email}</small></td><td>{g.event?.title || "—"}</td><td>{g.rsvpStatus}</td><td>{g.checkedIn ? "Checked in" : <button onClick={()=>onCheckIn(g._id)}>Check in</button>}</td></tr>)}</tbody></table></div>; }
+function InvoiceTable({ invoices }) { return <div className="table-wrap"><table><thead><tr><th>Event</th><th>Total</th><th>Status</th></tr></thead><tbody>{invoices.map(i=><tr key={i._id}><td>{i.eventName || i.event?.title || "—"}</td><td>{i.total}</td><td><span className="pill">{i.status}</span></td></tr>)}</tbody></table></div>; }
+function FeedbackTable({ feedback }) { return <div className="table-wrap"><table><thead><tr><th>Event</th><th>Rating</th><th>Comment</th></tr></thead><tbody>{feedback.map(f=><tr key={f._id}><td>{f.event?.title || "—"}</td><td>{f.rating}/5</td><td>{f.comment}</td></tr>)}</tbody></table></div>; }
+function VenueCards({ venues, choose }) { return <div className="cards">{venues.map(v=><div key={v._id} className="mini-card"><h3>{v.name}</h3><p>{v.location} · {v.capacity} guests · {v.sizeSqm} sqm</p><p>{v.amenities?.join(", ")}</p><b>{v.pricePerDay} EGP/day</b><button onClick={()=>choose(v._id)}>Use for request</button></div>)}</div>; }
