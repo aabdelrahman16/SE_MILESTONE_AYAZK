@@ -4,12 +4,26 @@ import api from "../services/api.js";
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(
-    JSON.parse(localStorage.getItem("user") || "null")
-  );
+  const [user, setUser] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "null");
+    } catch {
+      localStorage.removeItem("user");
+      return null;
+    }
+  });
 
   const login = async (email, password) => {
-    const { data } = await api.post("/auth/login", { email, password });
+    const cleanEmail = email.trim().toLowerCase();
+    const { data } = await api.post("/auth/login", {
+      email: cleanEmail,
+      password,
+    });
+
+    if (!data?.token || !data?.user) {
+      throw new Error("Login response did not include a token or user.");
+    }
+
     localStorage.setItem("token", data.token);
     localStorage.setItem("user", JSON.stringify(data.user));
     setUser(data.user);

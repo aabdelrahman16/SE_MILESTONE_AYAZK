@@ -1,0 +1,23 @@
+Login-only frontend fix applied.
+
+Changed files:
+- frontend/.env
+- frontend/src/services/api.js
+- frontend/src/context/AuthContext.jsx
+- frontend/src/pages/Login.jsx
+
+What was fixed:
+- Frontend now calls backend at http://localhost:5001/api instead of 5000.
+- Login stores the JWT token in localStorage as "token".
+- All API requests attach Authorization: Bearer <token>.
+- Email is trimmed/lowercased before login.
+- Login errors now show whether the backend is unreachable, the API route is missing, or credentials are wrong.
+
+Demo seeded stakeholder accounts:
+- organizer@demo.com
+- vendor1@demo.com
+- vendor2@demo.com
+- owner@demo.com
+
+Password for all seeded accounts:
+password123
